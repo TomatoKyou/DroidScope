@@ -60,4 +60,5 @@ dependencies {
 
     implementation("dev.rikka.shizuku:api:$shizukuVersion")
     implementation("dev.rikka.shizuku:provider:$shizukuVersion")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
 }

@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
+import android.widget.Toast
+import android.content.pm.PackageManager
+import rikka.shizuku.Shizuku
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +37,25 @@ fun LogcatController() {
         Button(
             onClick = {
                 if (!isRunning) {
+                    val hasReadLogs = context.checkSelfPermission("android.permission.READ_LOGS") == PackageManager.PERMISSION_GRANTED
+                    if (!hasReadLogs && Shizuku.pingBinder()) {
+                        try {
+                            Shizuku.newProcess(
+                                arrayOf(
+                                    "pm",
+                                    "grant",
+                                    context.packageName,
+                                    "android.permission.READ_LOGS"
+                                ),
+                                null,
+                                null
+                            )
+                            println("権限付与成功")
+                        } catch (e: Exception) {
+                            println("権限付与失敗: ${e.message}")
+                            Toast.makeText(context, "権限付与失敗: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
                     val intent = Intent(context, LogcatService::class.java)
                     context.startForegroundService(intent)
                     isRunning = true
