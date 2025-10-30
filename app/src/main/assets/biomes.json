@@ -1,0 +1,58 @@
+{
+  "WINDY": {
+    "colour": "#91f7ff",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/WINDY.png"
+  },
+  "SNOWY": {
+    "colour": "#c4f5f6",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/SNOWY.png"
+  },
+  "RAINY": {
+    "colour": "#4385ff",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/RAINY.png"
+  },
+  "HELL": {
+    "colour": "#4a1722",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/HELL.png"
+  },
+  "SAND STORM": {
+    "colour": "#f4c27c",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/SANDSTORM.png"
+  },
+  "STARFALL": {
+    "colour": "#6784e0",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/STARFALL.png"
+  },
+  "CORRUPTION": {
+    "colour": "#9042ff",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/CORRUPTION.png"
+  },
+  "NULL": {
+    "colour": "#070910",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/NULL.png"
+  },
+  "DREAMSPACE": {
+    "colour": "#ea6cbc",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/DREAMSPACE.png"
+  },
+  "GLITCHED": {
+    "colour": "#64fc64",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/GLITCHED.png"
+  },
+  "PUMPKIN MOON": {
+    "colour": "#d55f09",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/PUMPKIN_MOON.png"
+  },
+  "GRAVEYARD": {
+    "colour": "#444d5c",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/GRAVEYARD.png"
+  },
+  "BLOOD RAIN": {
+    "colour": "#ff0000",
+    "img_url": "https://raw.githubusercontent.com/bazthedev/SolsScope/refs/heads/main/img/biome/BLOOD_RAIN.png"
+  },
+  "NORMAL": {
+    "colour": "#ffffff",
+    "img_url": "https://vignette.wikia.nocookie.net/fantendo/images/5/58/Annoying_Dog.png/revision/latest?cb=20151218233815"
+  }
+}

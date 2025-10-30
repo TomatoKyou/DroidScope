@@ -23,16 +23,21 @@ import okhttp3.Response
 import java.io.IOException
 import okhttp3.RequestBody.Companion.toRequestBody
 import android.content.pm.PackageManager
+import android.content.Context
 
 class LogcatService : Service() {
     private var lastState: String? = null
     private var lastBiome: String? = null
+    private var biomeData: JSONObject? = null
+    private var auraData: JSONObject? = null
     private var client = OkHttpClient()
     private var logcatJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
+        biomeData = loadJsonData("biomes.json")
+        auraData = loadJsonData("auras.json")
         startForegroundServiceNotification()
         startLogcatReader()
     }
@@ -40,9 +45,18 @@ class LogcatService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         logcatJob?.cancel()
+        scope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun loadJsonData(fileName: String): JSONObject {
+        val inputStream = assets.open(fileName)
+        val jsonString = inputStream.bufferedReader().use { it.readText() }
+        return JSONObject(jsonString)
+    }
+
+
 
     private fun startForegroundServiceNotification() {
         val channelId = "logcat_foreground"
@@ -117,7 +131,7 @@ class LogcatService : Service() {
 
         println("🧭 getJsonData() called → state=$state, biome=$biome")
         if (state.startsWith("Equipped ")) {
-            state = state.removePrefix("Equipped ").trim('"')
+            state = state.removePrefix("Equipped ").trim().trim('"')
         }
         createPayload(state, biome)
     }
@@ -137,23 +151,41 @@ class LogcatService : Service() {
 
         // --- Biome Changed ---
         if (biome.isNotEmpty() && biome != lastBiome) {
+            val now = Instant.now().epochSecond
             lastBiome?.let {
+                val biomeEndColorStr = biomeData
+                    ?.optJSONObject(it)
+                    ?.optString("colour", "#00BFFF")
+                val biomeEndColor = biomeEndColorStr!!.removePrefix("#").toInt(16)
                 val endEmbed = JSONObject().apply {
                     put("title", "Biome Ended - $it")
-                    put("description", "<t:${Instant.now().epochSecond}:T>")
-                    put("color", 0xAAAAAA)
+                    put("description", "**<t:${now}:T>** (**<t:${now}:R>**)")
+                    put("color", biomeEndColor)
+                    put("footer", JSONObject().put("text", "DroidScope BETA 1.0.0"))
                 }
                 val endPayload = JSONObject().put("embeds", JSONArray().put(endEmbed))
                 sendWebhook(endPayload)
             }
-
+            println(biome)
+            val biomeStartColorStr = biomeData
+                ?.optJSONObject(biome)
+                ?.optString("colour", "#00BFFF")
+            val biomeStartColor = biomeStartColorStr!!.removePrefix("#").toInt(16)
+            val biomeStartImage = biomeData
+                ?.optJSONObject(biome)
+                ?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg")
             val startEmbed = JSONObject().apply {
                 put("title", "Biome Started - $biome")
-                put("description", "<t:${Instant.now().epochSecond}:T>")
-                put("color", 0x00BFFF)
+                put("description", "**<t:${now}:T>** (**<t:${now}:R>**)")
+                put("color", biomeStartColor)
+                put("thumbnail", JSONObject().put("url", biomeStartImage))
+                put("footer", JSONObject().put("text", "DroidScope BETA 1.0.0"))
             }
             val startPayload = JSONObject().put("embeds", JSONArray().put(startEmbed))
-            sendWebhook(startPayload)
+            scope.launch {
+                delay(300)
+                sendWebhook(startPayload)
+            }
             lastBiome = biome
         }
     }
