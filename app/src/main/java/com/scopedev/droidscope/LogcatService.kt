@@ -24,6 +24,8 @@ import java.io.IOException
 import okhttp3.RequestBody.Companion.toRequestBody
 import android.content.pm.PackageManager
 import android.content.Context
+import java.text.NumberFormat
+import java.util.Locale
 
 class LogcatService : Service() {
     private var lastState: String? = null
@@ -32,12 +34,18 @@ class LogcatService : Service() {
     private var auraData: JSONObject? = null
     private var client = OkHttpClient()
     private var logcatJob: Job? = null
+    private var webhookUrl: String = ""
+    private var privateServerUrl: String = ""
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
         biomeData = loadJsonData("biomes.json")
         auraData = loadJsonData("auras.json")
+        val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
+        webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
+        privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
+
         startForegroundServiceNotification()
         startLogcatReader()
     }
@@ -66,15 +74,15 @@ class LogcatService : Service() {
             val chan = NotificationChannel(
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(chan)
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("DroidScope Logcat Running")
-            .setContentText("logcatを監視中…")
+            .setContentTitle("DroidScope")
+            .setContentText("DroidScope is running✅")
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setOngoing(true)
             .build()
@@ -135,14 +143,39 @@ class LogcatService : Service() {
         }
         createPayload(state, biome)
     }
+    private fun getAuraColor(rarity: Int): Int {
+        return when {
+            rarity >= 99_999_999 -> 0xFF0000  // 赤
+            rarity >= 10_000_000 -> 0x8000FF  // 紫
+            rarity >= 1_000_000  -> 0xFF69B4  // ピンク
+            else -> 0xFFFFFF                  // 白
+        }
+    }
 
     private fun createPayload(state: String, biome: String) {
         // --- Aura Equipped ---
         if (state.isNotEmpty() && state != lastState) {
+            val auraImage = auraData?.optJSONObject(state.lowercase())?.optString("img_url") ?: ""
+            val auraRarity = auraData?.optJSONObject(state.lowercase())?.optInt("rarity", 0) ?: 0
+            val auraColor = getAuraColor(auraRarity)
+            val formattedAuraRarity = if (auraRarity == 0) {
+                "Unknown"
+            } else {
+                NumberFormat.getNumberInstance(Locale.US).format(auraRarity)
+            }
             val auraEmbed = JSONObject().apply {
                 put("title", "Aura Equipped - $state")
-                put("color", 0xFFD700)
-                put("footer", JSONObject().put("text", "DroidScope"))
+                put("color", auraColor)
+                put("footer", JSONObject().put("text", "DroidScope | Beta v1.0.0"))
+                put("thumbnail", JSONObject().put("url",auraImage))
+                put(
+                    "fields", JSONArray().put(
+                        JSONObject()
+                            .put("name", "Rarity:")
+                            .put("value", "1 in $formattedAuraRarity")
+                            .put("inline", true)
+                    )
+                )
             }
             val payload = JSONObject().put("embeds", JSONArray().put(auraEmbed))
             sendWebhook(payload)
@@ -153,35 +186,44 @@ class LogcatService : Service() {
         if (biome.isNotEmpty() && biome != lastBiome) {
             val now = Instant.now().epochSecond
             lastBiome?.let {
-                val biomeEndColorStr = biomeData
-                    ?.optJSONObject(it)
-                    ?.optString("colour", "#00BFFF")
-                val biomeEndColor = biomeEndColorStr!!.removePrefix("#").toInt(16)
+                val biomeEndColorStr = biomeData?.optJSONObject(it)?.optString("colour", "#00BFFF") ?: "#FFFFFF"
+                val biomeEndColor = biomeEndColorStr.removePrefix("#").toInt(16)
                 val endEmbed = JSONObject().apply {
                     put("title", "Biome Ended - $it")
                     put("description", "**<t:${now}:T>** (**<t:${now}:R>**)")
                     put("color", biomeEndColor)
-                    put("footer", JSONObject().put("text", "DroidScope BETA 1.0.0"))
+                    put("footer", JSONObject().put("text", "DroidScope | Beta v1.0.0"))
                 }
                 val endPayload = JSONObject().put("embeds", JSONArray().put(endEmbed))
                 sendWebhook(endPayload)
             }
             println(biome)
-            val biomeStartColorStr = biomeData
-                ?.optJSONObject(biome)
-                ?.optString("colour", "#00BFFF")
-            val biomeStartColor = biomeStartColorStr!!.removePrefix("#").toInt(16)
-            val biomeStartImage = biomeData
-                ?.optJSONObject(biome)
-                ?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg")
+            val biomeStartColorStr = biomeData?.optJSONObject(biome)?.optString("colour", "#00BFFF") ?: "#FFFFFF"
+            val biomeStartColor = biomeStartColorStr.removePrefix("#").toInt(16)
+            val biomeStartImage = biomeData?.optJSONObject(biome)?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg")
             val startEmbed = JSONObject().apply {
                 put("title", "Biome Started - $biome")
                 put("description", "**<t:${now}:T>** (**<t:${now}:R>**)")
                 put("color", biomeStartColor)
                 put("thumbnail", JSONObject().put("url", biomeStartImage))
-                put("footer", JSONObject().put("text", "DroidScope BETA 1.0.0"))
+                put("footer", JSONObject().put("text", "DroidScope | Beta v1.0.0"))
+                put(
+                    "fields", JSONArray().put(
+                        JSONObject()
+                            .put("name","Private Server")
+                            .put("value",privateServerUrl)
+                            .put("inline",false)
+                    )
+                )
             }
-            val startPayload = JSONObject().put("embeds", JSONArray().put(startEmbed))
+            val startPayload = if (biome == "GLITCHED" || biome == "DREAMSPACE") {
+                JSONObject().apply {
+                    put("content", "@everyone")
+                    put("embeds", JSONArray().put(startEmbed))
+                }
+            } else {
+                JSONObject().put("embeds", JSONArray().put(startEmbed))
+            }
             scope.launch {
                 delay(300)
                 sendWebhook(startPayload)
@@ -193,7 +235,7 @@ class LogcatService : Service() {
     private fun sendWebhook(payload: JSONObject) {
         val body = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder()
-            .url("https://discord.com/api/webhooks/1390268358913556480/INlgmKisfwBCKwiEZ83OAr7l0H78zVfjCLWRM6zDgFcoXmTdQypRhhFQlhDcnOtZ80_k")
+            .url(webhookUrl)
             .post(body)
             .build()
         client.newCall(request).enqueue(object : Callback {
