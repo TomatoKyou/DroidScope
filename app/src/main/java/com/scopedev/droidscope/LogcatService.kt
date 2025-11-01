@@ -74,7 +74,7 @@ class LogcatService : Service() {
             val chan = NotificationChannel(
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(chan)
