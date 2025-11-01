@@ -13,16 +13,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // === 起動時にShizuku権限を自動リクエスト ===
         ensureShizukuPermission(this)
 
         setContent {
@@ -32,23 +31,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * 起動時にShizuku権限を確認し、必要なら自動でリクエスト
-     */
     private fun ensureShizukuPermission(context: Context) {
-        // Shizukuが生きてるか確認
-        if (!Shizuku.pingBinder()) {
-            // サービス起動していない場合は何もできないので戻る
-            return
-        }
+        if (!Shizuku.pingBinder()) return
 
-        // すでに権限があるか？
         when (Shizuku.checkSelfPermission()) {
-            PackageManager.PERMISSION_GRANTED -> {
-                // 権限OK → 何もしない
-            }
+            PackageManager.PERMISSION_GRANTED -> {}
             else -> {
-                // rationale出す必要がなければリクエスト
                 if (!Shizuku.shouldShowRequestPermissionRationale()) {
                     Shizuku.requestPermission(0)
                 }
@@ -72,13 +60,13 @@ fun LogcatController() {
         drawerContent = {
             ModalDrawerSheet {
                 Text(
-                    text = "メニュー",
+                    text = stringResource(R.string.menu_title),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(16.dp)
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("設定") },
+                    label = { Text(stringResource(R.string.menu_settings)) },
                     selected = selectedItem == "settings",
                     onClick = {
                         selectedItem = "settings"
@@ -87,7 +75,7 @@ fun LogcatController() {
                 )
 
                 NavigationDrawerItem(
-                    label = { Text("メイン") },
+                    label = { Text(stringResource(R.string.menu_main)) },
                     selected = selectedItem == "main",
                     onClick = {
                         selectedItem = "main"
@@ -100,12 +88,10 @@ fun LogcatController() {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("DroidScope") },
+                    title = { Text(stringResource(R.string.app_name)) },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch { drawerState.open() }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.menu_title))
                         }
                     }
                 )
@@ -130,9 +116,7 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text("OK") }
-            },
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_ok)) } },
             title = { Text(dialogTitle) },
             text = { Text(dialogMessage) }
         )
@@ -149,8 +133,8 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
                 if (!isRunning) {
                     val shizukuGranted = checkShizukuPermission(context, 0)
                     if (!shizukuGranted) {
-                        dialogTitle = "Shizuku 権限必要"
-                        dialogMessage = "Shizuku を利用するには権限が必要です。"
+                        dialogTitle = context.getString(R.string.dialog_permission_title)
+                        dialogMessage = context.getString(R.string.dialog_permission_message)
                         showDialog = true
                         return@Button
                     }
@@ -159,8 +143,8 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
                         context.checkSelfPermission("android.permission.READ_LOGS") == PackageManager.PERMISSION_GRANTED
 
                     if (!hasReadLogs && !Shizuku.pingBinder()) {
-                        dialogTitle = "権限エラー"
-                        dialogMessage = "READ_LOGS権限がありません！\nShizukuを実行するか、ADBコマンドを実行してください。"
+                        dialogTitle = context.getString(R.string.dialog_no_read_logs_title)
+                        dialogMessage = context.getString(R.string.dialog_no_read_logs_message)
                         showDialog = true
                         return@Button
                     }
@@ -168,24 +152,20 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
                     if (!hasReadLogs && Shizuku.pingBinder()) {
                         try {
                             Shizuku.newProcess(
-                                arrayOf(
-                                    "pm", "grant",
-                                    context.packageName,
-                                    "android.permission.READ_LOGS"
-                                ),
+                                arrayOf("pm", "grant", context.packageName, "android.permission.READ_LOGS"),
                                 null, null
                             )
                             val granted =
                                 context.checkSelfPermission("android.permission.READ_LOGS") == PackageManager.PERMISSION_GRANTED
                             if (!granted) {
-                                dialogTitle = "権限取得失敗"
-                                dialogMessage = "READ_LOGS権限の取得に失敗しました。"
+                                dialogTitle = context.getString(R.string.dialog_grant_failed_title)
+                                dialogMessage = context.getString(R.string.dialog_grant_failed_message)
                                 showDialog = true
                                 return@Button
                             }
                         } catch (e: Exception) {
-                            dialogTitle = "権限付与失敗"
-                            dialogMessage = "エラー：${e.message}"
+                            dialogTitle = context.getString(R.string.dialog_grant_exception_title)
+                            dialogMessage = context.getString(R.string.dialog_grant_exception_message, e.message ?: "unknown")
                             showDialog = true
                             return@Button
                         }
@@ -199,7 +179,7 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
             enabled = !isRunning,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Start Logcat Service")
+            Text(stringResource(R.string.start_service))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -215,7 +195,7 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
             enabled = isRunning,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Stop Service")
+            Text(stringResource(R.string.stop_service))
         }
     }
 }
@@ -232,9 +212,9 @@ fun SettingsScreen() {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("OK") } },
-            title = { Text("設定保存") },
-            text = { Text("Webhook URL と Private Server URL を保存しました") }
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_ok)) } },
+            title = { Text(stringResource(R.string.dialog_settings_saved_title)) },
+            text = { Text(stringResource(R.string.dialog_settings_saved_message)) }
         )
     }
 
@@ -247,7 +227,7 @@ fun SettingsScreen() {
         OutlinedTextField(
             value = webhookUrl,
             onValueChange = { webhookUrl = it },
-            label = { Text("Webhook URL") },
+            label = { Text(stringResource(R.string.webhook_url)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -256,7 +236,7 @@ fun SettingsScreen() {
         OutlinedTextField(
             value = privateServerUrl,
             onValueChange = { privateServerUrl = it },
-            label = { Text("Private Server URL") },
+            label = { Text(stringResource(R.string.private_server_url)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -264,21 +244,19 @@ fun SettingsScreen() {
 
         Button(
             onClick = {
-                prefs.edit().putString("WEBHOOK_URL", webhookUrl)
+                prefs.edit()
+                    .putString("WEBHOOK_URL", webhookUrl)
                     .putString("PRIVATE_SERVER_URL", privateServerUrl)
                     .apply()
                 showDialog = true
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("設定を保存")
+            Text(stringResource(R.string.save_settings))
         }
     }
 }
 
-/**
- * Shizuku 権限チェック
- */
 fun checkShizukuPermission(context: Context, code: Int): Boolean {
     return when {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
