@@ -258,6 +258,9 @@ fun SettingsScreen() {
 }
 
 fun checkShizukuPermission(context: Context, code: Int): Boolean {
+    if (!Shizuku.pingBinder()) {
+        return false
+    }
     return when {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
         Shizuku.shouldShowRequestPermissionRationale() -> false

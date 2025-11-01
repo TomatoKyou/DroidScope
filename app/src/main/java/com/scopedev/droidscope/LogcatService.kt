@@ -40,14 +40,20 @@ class LogcatService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        biomeData = loadJsonData("biomes.json")
-        auraData = loadJsonData("auras.json")
-        val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
-        webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
-        privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
-
         startForegroundServiceNotification()
-        startLogcatReader()
+
+        scope.launch {
+            delay(1000) // ← Context準備待ち。100〜300msで十分
+            biomeData = loadJsonData("biomes.json")
+            println("biomes.json loaded")
+            auraData = loadJsonData("auras.json")
+
+            val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
+            webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
+            privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
+
+            startLogcatReader()
+        }
     }
 
     override fun onDestroy() {
@@ -200,7 +206,7 @@ class LogcatService : Service() {
             println(biome)
             val biomeStartColorStr = biomeData?.optJSONObject(biome)?.optString("colour", "#00BFFF") ?: "#FFFFFF"
             val biomeStartColor = biomeStartColorStr.removePrefix("#").toInt(16)
-            val biomeStartImage = biomeData?.optJSONObject(biome)?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg")
+            val biomeStartImage = biomeData?.optJSONObject(biome)?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg") ?: "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg"
             val startEmbed = JSONObject().apply {
                 put("title", "Biome Started - $biome")
                 put("description", "**<t:${now}:T>** (**<t:${now}:R>**)")
