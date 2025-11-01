@@ -81,8 +81,8 @@ class LogcatService : Service() {
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("DroidScope")
-            .setContentText("DroidScope is running✅")
+            .setContentTitle("DroidScope is running✅")
+            .setContentText("catching logs...")
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setOngoing(true)
             .build()

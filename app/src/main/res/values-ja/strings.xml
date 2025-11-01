@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">DroidScope</string>
+
+    <!-- Drawer -->
+    <string name="menu_title">メニュー</string>
+    <string name="menu_settings">設定</string>
+    <string name="menu_main">メイン</string>
+
+    <!-- Buttons -->
+    <string name="start_service">Start DroidScope</string>
+    <string name="stop_service">Stop DroidScope</string>
+    <string name="save_settings">設定を保存</string>
+
+    <!-- Dialog Buttons -->
+    <string name="dialog_ok">OK</string>
+
+    <!-- Dialogs: Permission -->
+    <string name="dialog_permission_title">Shizuku 権限必要</string>
+    <string name="dialog_permission_message">Shizuku を利用するには権限が必要です。</string>
+    <string name="dialog_no_read_logs_title">権限エラー</string>
+    <string name="dialog_no_read_logs_message">READ_LOGS権限がありません！\nShizukuを実行するか、ADBコマンドを実行してください。</string>
+    <string name="dialog_grant_failed_title">権限の取得に失敗しました。</string>
+    <string name="dialog_grant_failed_message">READ_LOGS権限の取得に失敗しました。\nお使いのスマホメーカーが権限の付与を制限している可能性があります。\n「開発者オプション」内の「認可の監視を無効化」を有効にしてください。</string>
+    <string name="dialog_grant_exception_title">権限の付与に失敗しました。</string>
+    <string name="dialog_grant_exception_message">エラー：%1$s</string>
+
+    <!-- Dialogs: Settings -->
+    <string name="dialog_settings_saved_title">設定保存</string>
+    <string name="dialog_settings_saved_message">Webhook URL と Private Server URL を保存しました</string>
+
+    <!-- Settings -->
+    <string name="webhook_url">Webhook URL</string>
+    <string name="private_server_url">Private Server URL</string>
+</resources>
