@@ -15,8 +15,8 @@
     <string name="dialog_ok">OK</string>
 
     <!-- Dialogs: Permission -->
-    <string name="dialog_permission_title">Shizuku 権限必要</string>
-    <string name="dialog_permission_message">Shizuku を利用するには権限が必要です。</string>
+    <string name="dialog_permission_title">Shizukuが使用できません</string>
+    <string name="dialog_permission_message">Shizuku権限が付与されていない、もしくはShizukuがインストール/実行されていません。</string>
     <string name="dialog_no_read_logs_title">権限エラー</string>
     <string name="dialog_no_read_logs_message">READ_LOGS権限がありません！\nShizukuを実行するか、ADBコマンドを実行してください。</string>
     <string name="dialog_grant_failed_title">権限の取得に失敗しました。</string>

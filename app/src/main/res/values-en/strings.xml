@@ -15,8 +15,8 @@
     <string name="dialog_ok">OK</string>
 
     <!-- Dialogs: Permission -->
-    <string name="dialog_permission_title">Shizuku Permission Required</string>
-    <string name="dialog_permission_message">Shizuku requires permission to operate.</string>
+    <string name="dialog_permission_title">Failed to use Shizuku</string>
+    <string name="dialog_permission_message">Shizuku permissions may not be granted, \nor Shizuku may not be installed/running.</string>
     <string name="dialog_no_read_logs_title">Permission Error</string>
     <string name="dialog_no_read_logs_message">READ_LOGS permission not granted!\nPlease start Shizuku or use an ADB command.</string>
     <string name="dialog_grant_failed_title">Failed to Obtain Permission</string>

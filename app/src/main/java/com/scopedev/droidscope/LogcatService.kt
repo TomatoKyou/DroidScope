@@ -26,8 +26,14 @@ import android.content.pm.PackageManager
 import android.content.Context
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.core.content.edit
 
 class LogcatService : Service() {
+    companion object {
+        @Volatile
+        var isRunning = false
+            private set
+    }
     private var lastState: String? = null
     private var lastBiome: String? = null
     private var biomeData: JSONObject? = null
@@ -40,6 +46,11 @@ class LogcatService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        if (isRunning){
+            stopSelf()
+            return
+        }
+        isRunning = true
         startForegroundServiceNotification()
 
         scope.launch {
@@ -47,19 +58,23 @@ class LogcatService : Service() {
             biomeData = loadJsonData("biomes.json")
             println("biomes.json loaded")
             auraData = loadJsonData("auras.json")
-
             val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
             webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
             privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
 
             startLogcatReader()
         }
+        getSharedPreferences("app_state", Context.MODE_PRIVATE)
+            .edit { putBoolean("isServiceRunning", true) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         logcatJob?.cancel()
         scope.cancel()
+        isRunning = false
+        getSharedPreferences("app_state", Context.MODE_PRIVATE)
+            .edit { putBoolean("isServiceRunning", false) }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -231,7 +246,7 @@ class LogcatService : Service() {
                 JSONObject().put("embeds", JSONArray().put(startEmbed))
             }
             scope.launch {
-                delay(300)
+                delay(500)
                 sendWebhook(startPayload)
             }
             lastBiome = biome

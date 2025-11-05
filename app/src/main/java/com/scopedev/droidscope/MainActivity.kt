@@ -17,11 +17,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
+import androidx.core.content.edit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         ensureShizukuPermission(this)
 
         setContent {
@@ -49,7 +49,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LogcatController() {
     val context = LocalContext.current
-    var isRunning by remember { mutableStateOf(false) }
+    val prefs = context.getSharedPreferences("app_state", Context.MODE_PRIVATE)
+
+    // --- 起動時にサービス状態を復元 ---
+    var isRunning by remember {
+        mutableStateOf(prefs.getBoolean("isServiceRunning", false))
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -66,19 +71,19 @@ fun LogcatController() {
                 )
 
                 NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.menu_settings)) },
-                    selected = selectedItem == "settings",
+                    label = { Text(stringResource(R.string.menu_main)) },
+                    selected = selectedItem == "main",
                     onClick = {
-                        selectedItem = "settings"
+                        selectedItem = "main"
                         scope.launch { drawerState.close() }
                     }
                 )
 
                 NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.menu_main)) },
-                    selected = selectedItem == "main",
+                    label = { Text(stringResource(R.string.menu_settings)) },
+                    selected = selectedItem == "settings",
                     onClick = {
-                        selectedItem = "main"
+                        selectedItem = "settings"
                         scope.launch { drawerState.close() }
                     }
                 )
@@ -91,7 +96,10 @@ fun LogcatController() {
                     title = { Text(stringResource(R.string.app_name)) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.menu_title))
+                            Icon(
+                                Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.menu_title)
+                            )
                         }
                     }
                 )
@@ -99,7 +107,14 @@ fun LogcatController() {
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding)) {
                 when (selectedItem) {
-                    "main" -> MainScreen(context, isRunning) { isRunning = it }
+                    "main" -> MainScreen(
+                        context,
+                        isRunning = isRunning
+                    ) { running ->
+                        isRunning = running
+                        prefs.edit { putBoolean("isServiceRunning", running) }
+                    }
+
                     "settings" -> SettingsScreen()
                 }
             }
@@ -108,7 +123,11 @@ fun LogcatController() {
 }
 
 @Composable
-fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) -> Unit) {
+fun MainScreen(
+    context: Context,
+    isRunning: Boolean,
+    onRunningChange: (Boolean) -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
     var dialogTitle by remember { mutableStateOf("") }
     var dialogMessage by remember { mutableStateOf("") }
@@ -116,7 +135,11 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_ok)) } },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.dialog_ok))
+                }
+            },
             title = { Text(dialogTitle) },
             text = { Text(dialogMessage) }
         )
@@ -128,6 +151,7 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
             .padding(32.dp),
         verticalArrangement = Arrangement.Center
     ) {
+        // --- サービス開始ボタン ---
         Button(
             onClick = {
                 if (!isRunning) {
@@ -165,15 +189,19 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
                             }
                         } catch (e: Exception) {
                             dialogTitle = context.getString(R.string.dialog_grant_exception_title)
-                            dialogMessage = context.getString(R.string.dialog_grant_exception_message, e.message ?: "unknown")
+                            dialogMessage =
+                                context.getString(R.string.dialog_grant_exception_message, e.message ?: "unknown")
                             showDialog = true
                             return@Button
                         }
                     }
 
-                    val intent = Intent(context, LogcatService::class.java)
-                    context.startForegroundService(intent)
-                    onRunningChange(true)
+                    // --- 多重起動防止 ---
+                    if (!LogcatService.isRunning) {
+                        val intent = Intent(context, LogcatService::class.java)
+                        context.startForegroundService(intent)
+                        onRunningChange(true)
+                    }
                 }
             },
             enabled = !isRunning,
@@ -184,6 +212,7 @@ fun MainScreen(context: Context, isRunning: Boolean, onRunningChange: (Boolean) 
 
         Spacer(Modifier.height(16.dp))
 
+        // --- サービス停止ボタン ---
         Button(
             onClick = {
                 if (isRunning) {
@@ -212,7 +241,11 @@ fun SettingsScreen() {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.dialog_ok)) } },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.dialog_ok))
+                }
+            },
             title = { Text(stringResource(R.string.dialog_settings_saved_title)) },
             text = { Text(stringResource(R.string.dialog_settings_saved_message)) }
         )
@@ -244,10 +277,10 @@ fun SettingsScreen() {
 
         Button(
             onClick = {
-                prefs.edit()
-                    .putString("WEBHOOK_URL", webhookUrl)
-                    .putString("PRIVATE_SERVER_URL", privateServerUrl)
-                    .apply()
+                prefs.edit {
+                    putString("WEBHOOK_URL", webhookUrl)
+                        .putString("PRIVATE_SERVER_URL", privateServerUrl)
+                }
                 showDialog = true
             },
             modifier = Modifier.fillMaxWidth()
@@ -258,6 +291,9 @@ fun SettingsScreen() {
 }
 
 fun checkShizukuPermission(context: Context, code: Int): Boolean {
+    if(context.checkSelfPermission("android.permission.READ_LOGS") == PackageManager.PERMISSION_GRANTED){
+        return true
+    }
     if (!Shizuku.pingBinder()) {
         return false
     }
