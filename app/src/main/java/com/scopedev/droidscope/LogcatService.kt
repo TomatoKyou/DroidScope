@@ -42,6 +42,8 @@ class LogcatService : Service() {
     private var logcatJob: Job? = null
     private var webhookUrl: String = ""
     private var privateServerUrl: String = ""
+    private var discordUserId: String? = null
+    private var auraNotificationMin: Int = 100000000
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
@@ -56,11 +58,12 @@ class LogcatService : Service() {
         scope.launch {
             delay(1000) // ← Context準備待ち。100〜300msで十分
             biomeData = loadJsonData("biomes.json")
-            println("biomes.json loaded")
             auraData = loadJsonData("auras.json")
             val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
             webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
             privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
+            discordUserId = prefs.getString("DISCORD_USER_ID", "") ?: ""
+            auraNotificationMin = prefs.getInt("AURA_NOTIFICATION_MIN", 100000000)
 
             startLogcatReader()
         }
@@ -112,6 +115,7 @@ class LogcatService : Service() {
     }
 
     private fun startLogcatReader() {
+        logcatJob?.cancel()
         logcatJob = scope.launch { readLogcat() }
     }
 
@@ -198,12 +202,17 @@ class LogcatService : Service() {
                     )
                 )
             }
-            val payload = JSONObject().put("embeds", JSONArray().put(auraEmbed))
+            val payload = JSONObject().apply {
+                if (auraRarity >= auraNotificationMin) {
+                    put("content", "<@$discordUserId>")
+                }
+                put("embeds", JSONArray().put(auraEmbed))
+            }
             sendWebhook(payload)
             lastState = state
         }
 
-        // --- Biome Changed ---
+        // --- Biome Ended ---
         if (biome.isNotEmpty() && biome != lastBiome) {
             val now = Instant.now().epochSecond
             lastBiome?.let {
@@ -218,7 +227,7 @@ class LogcatService : Service() {
                 val endPayload = JSONObject().put("embeds", JSONArray().put(endEmbed))
                 sendWebhook(endPayload)
             }
-            println(biome)
+            // --- Biome Started ---
             val biomeStartColorStr = biomeData?.optJSONObject(biome)?.optString("colour", "#00BFFF") ?: "#FFFFFF"
             val biomeStartColor = biomeStartColorStr.removePrefix("#").toInt(16)
             val biomeStartImage = biomeData?.optJSONObject(biome)?.optString("img_url", "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg") ?: "https://images.teepublic.com/derived/production/designs/10267605_0/1589729993/i_p:c_191919,bps_fr,s_630,q_90.jpg"

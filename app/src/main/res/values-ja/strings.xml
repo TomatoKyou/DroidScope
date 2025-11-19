@@ -26,9 +26,11 @@
 
     <!-- Dialogs: Settings -->
     <string name="dialog_settings_saved_title">設定保存</string>
-    <string name="dialog_settings_saved_message">Webhook URL と Private Server URL を保存しました</string>
+    <string name="dialog_settings_saved_message">全ての設定を保存しました</string>
 
     <!-- Settings -->
     <string name="webhook_url">Webhook URL</string>
+    <string name="discord_user_id">DiscordユーザーID</string>
+    <string name="aura_notification_min">オーラ通知の最低レアリティ</string>
     <string name="private_server_url">Private Server URL</string>
 </resources>

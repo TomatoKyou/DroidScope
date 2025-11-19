@@ -5,14 +5,21 @@ import android.content.Intent
 import android.os.Bundle
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -233,10 +240,39 @@ fun MainScreen(
 fun SettingsScreen() {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("app_config", Context.MODE_PRIVATE)
+    val focusManager = LocalFocusManager.current
+
     var webhookUrl by remember { mutableStateOf(prefs.getString("WEBHOOK_URL", "") ?: "") }
     var privateServerUrl by remember { mutableStateOf(prefs.getString("PRIVATE_SERVER_URL", "") ?: "") }
+    var discordUserId by remember { mutableStateOf(prefs.getString("DISCORD_USER_ID", "") ?: "") }
+    var auraNotificationMin by remember { mutableIntStateOf(prefs.getInt("AURA_NOTIFICATION_MIN", 100000000)) }
 
     var showDialog by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) } // ← 実際のフォーカス状態
+    var hasInitialized by remember { mutableStateOf(false) } // ← 初期保存防止用
+
+    fun saveSettings() {
+        prefs.edit {
+            putString("WEBHOOK_URL", webhookUrl)
+            putString("PRIVATE_SERVER_URL", privateServerUrl)
+            putString("DISCORD_USER_ID", discordUserId)
+            putInt("AURA_NOTIFICATION_MIN", auraNotificationMin)
+        }
+        showDialog = true
+    }
+
+    // フォーカス解除時のみ自動保存（初期実行は無視）
+    LaunchedEffect(isFocused) {
+        if (hasInitialized && !isFocused) {
+            saveSettings()
+        }
+        hasInitialized = true
+    }
+
+    // 戻るボタンでフォーカス解除
+    BackHandler {
+        focusManager.clearFocus()
+    }
 
     if (showDialog) {
         AlertDialog(
@@ -251,44 +287,83 @@ fun SettingsScreen() {
         )
     }
 
-    Column(
+    // 空白タップでフォーカス解除
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Top
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
+            }
     ) {
-        OutlinedTextField(
-            value = webhookUrl,
-            onValueChange = { webhookUrl = it },
-            label = { Text(stringResource(R.string.webhook_url)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = privateServerUrl,
-            onValueChange = { privateServerUrl = it },
-            label = { Text(stringResource(R.string.private_server_url)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                prefs.edit {
-                    putString("WEBHOOK_URL", webhookUrl)
-                        .putString("PRIVATE_SERVER_URL", privateServerUrl)
-                }
-                showDialog = true
-            },
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Top
         ) {
-            Text(stringResource(R.string.save_settings))
+            OutlinedTextField(
+                value = webhookUrl,
+                onValueChange = { webhookUrl = it },
+                label = { Text(stringResource(R.string.webhook_url)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = privateServerUrl,
+                onValueChange = { privateServerUrl = it },
+                label = { Text(stringResource(R.string.private_server_url)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = discordUserId,
+                onValueChange = { discordUserId = it },
+                label = { Text(stringResource(R.string.discord_user_id)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = auraNotificationMin.toString(),
+                onValueChange = {
+                    auraNotificationMin = it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0
+                },
+                label = { Text(stringResource(R.string.aura_notification_min)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { isFocused = it.isFocused },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Button(
+                onClick = { saveSettings() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.save_settings))
+            }
         }
     }
 }
+
 
 fun checkShizukuPermission(context: Context, code: Int): Boolean {
     if(context.checkSelfPermission("android.permission.READ_LOGS") == PackageManager.PERMISSION_GRANTED){

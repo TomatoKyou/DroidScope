@@ -26,9 +26,11 @@
 
     <!-- Dialogs: Settings -->
     <string name="dialog_settings_saved_title">Settings Saved</string>
-    <string name="dialog_settings_saved_message">Webhook URL and Private Server URL have been saved.</string>
+    <string name="dialog_settings_saved_message">All settings have been saved.</string>
 
     <!-- Settings -->
     <string name="webhook_url">Webhook URL</string>
+    <string name="discord_user_id">Discord User ID</string>
+    <string name="aura_notification_min">Aura Notification Minimum Rarity</string>
     <string name="private_server_url">Private Server URL</string>
 </resources>

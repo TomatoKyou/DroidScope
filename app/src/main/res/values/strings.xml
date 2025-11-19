@@ -30,5 +30,7 @@
 
     <!-- Settings -->
     <string name="webhook_url">Webhook URL</string>
+    <string name="discord_user_id">Discord User ID</string>
+    <string name="aura_notification_min">Aura Notification Minimum Rarity</string>
     <string name="private_server_url">Private Server URL</string>
 </resources>
