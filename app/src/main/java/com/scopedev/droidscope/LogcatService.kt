@@ -23,7 +23,6 @@ import okhttp3.Response
 import java.io.IOException
 import okhttp3.RequestBody.Companion.toRequestBody
 import android.content.pm.PackageManager
-import android.content.Context
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.core.content.edit
@@ -59,7 +58,7 @@ class LogcatService : Service() {
             delay(1000) // ← Context準備待ち。100〜300msで十分
             biomeData = loadJsonData("biomes.json")
             auraData = loadJsonData("auras.json")
-            val prefs = getSharedPreferences("app_config", Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences("app_config", MODE_PRIVATE)
             webhookUrl = prefs.getString("WEBHOOK_URL", "") ?: ""
             privateServerUrl = prefs.getString("PRIVATE_SERVER_URL", "") ?: ""
             discordUserId = prefs.getString("DISCORD_USER_ID", "") ?: ""
@@ -67,7 +66,7 @@ class LogcatService : Service() {
 
             startLogcatReader()
         }
-        getSharedPreferences("app_state", Context.MODE_PRIVATE)
+        getSharedPreferences("app_state", MODE_PRIVATE)
             .edit { putBoolean("isServiceRunning", true) }
     }
 
@@ -76,7 +75,7 @@ class LogcatService : Service() {
         logcatJob?.cancel()
         scope.cancel()
         isRunning = false
-        getSharedPreferences("app_state", Context.MODE_PRIVATE)
+        getSharedPreferences("app_state", MODE_PRIVATE)
             .edit { putBoolean("isServiceRunning", false) }
     }
 

@@ -314,7 +314,7 @@ fun SettingsScreen() {
                 singleLine = true
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = privateServerUrl,
